@@ -137,9 +137,8 @@ info.onAdd = function (map) {
 // method that we will use to update the control based on feature properties passed
 info.update = function (props) {
   if(tabnum.localeCompare("2") == 0){
-    var age = props.properties[tabnum];
     this._div.innerHTML = '<h4>Median Age</h4>' +  (props ?
-        'Age: ' + checkNull(age.toFixed(1)) + ' years old' + '<br />' +
+        'Age: ' + checkNull(props.properties[tabnum]).toFixed(1) + ' years old' + '<br />' +
         '<i>Click on a town for full profile in PDF</i>'
         : 'Hover over a town');
   } else if(tabnum.localeCompare("3") == 0){
@@ -148,15 +147,13 @@ info.update = function (props) {
         '<i>Click on a town for full profile in PDF</i>'
         : 'Hover over a town');
   } else if(tabnum.localeCompare("4") == 0){
-    var povertyRate = props.properties[tabnum] * 100;
     this._div.innerHTML = '<h4>People in Poverty</h4>' +  (props ?
-        'Poverty: ' + checkNull(povertyRate.toFixed(1)) + ' %' + '<br />' +
+        'Poverty: ' + (checkNull(props.properties[tabnum]) * 100).toFixed(1) + ' %' + '<br />' +
         '<i>Click on a town for full profile in PDF</i>'
         : 'Hover over a town');
   } else if(tabnum.localeCompare("5") == 0){
-    var unemployment = props.properties[tabnum] * 100;
     this._div.innerHTML = '<h4>Unemployment Rate</h4>' +  (props ?
-        'Unemployment Rate: ' + checkNull(unemployment.toFixed(1)) + ' %' + '<br />' +
+        'Unemployment Rate: ' + (checkNull(props.properties[tabnum]) * 100).toFixed(1) + ' %' + '<br />' +
         '<i>Click on a town for full profile in PDF</i>'
         : 'Hover over a town');
   } else {
@@ -224,6 +221,7 @@ legend.update = function (props) {
 legend.addTo(map);
 
 function highlightFeature (e){
+  resetHighLight(e);
   var layer = e.target;
   var popupText = "<b>" + layer.feature.properties.name + "</b>"   // Popup text: link to town profile
  + "<br><a href='" + layer.feature.properties.profile + "'>Town Profile</a>";
@@ -238,8 +236,12 @@ function highlightFeature (e){
   if (!L.Browser.ie && !L.Browser.opera) {
     layer.bringToFront();
   }
-  info.update(feature);
+  info.update(layer.feature);
  
+}
+function resetHighLight (e) {
+  geoJsonLayer.setStyle(style);
+  info.update();
 }
 var geoJsonLayer = 0;
 /* POLYGON OVERLAY */
@@ -249,27 +251,9 @@ $.getJSON("cwp-37-towns-v8.geojson", function (data) {
     style: style,
     onEachFeature: function( feature, layer) {
       layer.on({
-        mouseover: function (e) {
-          var layer = e.target;
-          var popupText = "<b>" + feature.properties.name + "</b>"   // Popup text: link to town profile
-         + "<br><a href='" + feature.properties.profile + "'>Town Profile</a>";
-          layer.bindPopup(popupText);
-          layer.setStyle({
-            weight: 5,
-            color: '#666',
-            dashArray: '',
-            fillOpacity: 0.7
-          });
-
-          if (!L.Browser.ie && !L.Browser.opera) {
-            layer.bringToFront();
-          }
-          info.update(feature);
-        },
-        mouseout: function (e) {
-          geoJsonLayer.resetStyle(e.target);
-          info.update();
-        }
+        mouseover: highlightFeature,
+        mouseout: resetHighLight,
+        click: highlightFeature
       });
     }
   }).addTo(map);
